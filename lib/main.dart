@@ -3,7 +3,7 @@ import 'package:finance/firebase_options.dart';
 import 'package:finance/pages/loginscreen.dart';
 import 'package:finance/pages/registerscreen.dart';
 import 'package:finance/pages/welcomescreen.dart';
-import 'package:finance/payment/payment.dart';
+import 'package:finance/refreal/startrefreal.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -24,13 +24,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: const Color.fromARGB(255, 178, 193, 203),
       ),
-      initialRoute: registerpage.id,
+      initialRoute: welcomeScreen.id,
       routes: {
         welcomeScreen.id: (context) => const welcomeScreen(),
         bottombar.id: (context) => const bottombar(),
         registerpage.id: (context) => const registerpage(),
         loginscreen.id: (context) => const loginscreen(),
-        HomePage.id: (context) => HomePage(),
+        ReferralPageStart.id: (context) => ReferralPageStart(),
       },
     );
   }

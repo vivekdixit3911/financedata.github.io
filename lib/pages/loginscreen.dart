@@ -1,7 +1,5 @@
-// ignore_for_file: camel_case_types, prefer_typing_uninitialized_variables, avoid_print, use_build_context_synchronously
-
 import 'package:finance/bottombarinitalpage/bottombarpage.dart';
-import 'package:finance/globalvariabes/globalvariables.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../decorations/inputfields.dart';
 import '../decorations/welocmescreenbuttons.dart';
@@ -9,18 +7,20 @@ import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 
 class loginscreen extends StatefulWidget {
   static String id = "loginscreen";
-  const loginscreen({super.key});
+  const loginscreen({Key? key}) : super(key: key);
 
   @override
   State<loginscreen> createState() => _loginscreenState();
 }
 
 class _loginscreenState extends State<loginscreen> {
-  void userlogin() {
-    // _auth.getRedirectResult();
+  late String username = "";
+  late String userpassword = "";
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
-  late String username;
-  late String userpassword;
 
   @override
   Widget build(BuildContext context) {
@@ -68,21 +68,23 @@ class _loginscreenState extends State<loginscreen> {
                     padding:
                         const EdgeInsets.only(right: 50, left: 50, top: 30),
                     child: TextFormField(
-                        onChanged: (value) {
-                          username = value;
-                        },
-                        decoration: inputdecorusernmae),
+                      onChanged: (value) {
+                        username = value;
+                      },
+                      decoration: inputdecorusernmae,
+                    ),
                   ),
                   Padding(
                     padding:
                         const EdgeInsets.only(right: 50, left: 50, top: 20),
                     child: TextFormField(
-                        onChanged: (value) {
-                          userpassword = value;
-                        },
-                        keyboardType: TextInputType.phone,
-                        obscureText: true,
-                        decoration: inputdecorpassword),
+                      onChanged: (value) {
+                        userpassword = value;
+                      },
+                      keyboardType: TextInputType.phone,
+                      obscureText: true,
+                      decoration: inputdecorpassword,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(left: 200),
@@ -102,15 +104,29 @@ class _loginscreenState extends State<loginscreen> {
                       onpressed: () async {
                         final progress = ProgressHUD.of(context);
                         progress?.showWithText("Ruko JARA..");
-                        print(username);
-                        print(userpassword);
+
+                        if (username == null ||
+                            username.isEmpty ||
+                            userpassword == null ||
+                            userpassword.isEmpty) {
+                          _showSnackBar(context,
+                              'Please enter both username and password.');
+                          progress?.dismiss();
+                          return;
+                        }
+
                         try {
-                          signInUser(username, userpassword);
+                          await FirebaseAuth.instance
+                              .signInWithEmailAndPassword(
+                                  email: username, password: userpassword);
 
                           Navigator.pushNamed(context, bottombar.id);
                           progress?.dismiss();
                         } catch (e) {
                           print(e);
+                          _showSnackBar(context,
+                              'Invalid credentials. Please try again.');
+                          progress?.dismiss();
                         }
                       },
                       text: "Login",

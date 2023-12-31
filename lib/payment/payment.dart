@@ -1,13 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:upi_india/upi_india.dart';
 
-class HomePage extends StatefulWidget {
-  static String id = "HomePage";
+class Screen extends StatefulWidget {
+  final num enteredNumber;
+
+  Screen({
+    Key? key,
+    required this.enteredNumber,
+  }) : super(key: key);
+
+  static String id = "Screen";
+
   @override
-  _HomePageState createState() => _HomePageState();
+  _ScreenState createState() => _ScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ScreenState extends State<Screen> {
+  dynamic get enteredNumber => widget.enteredNumber;
+
   Future<UpiResponse>? _transaction;
   UpiIndia _upiIndia = UpiIndia();
   List<UpiApp>? apps;
@@ -39,9 +52,9 @@ class _HomePageState extends State<HomePage> {
       app: app,
       receiverUpiId: "9839645528@upi",
       receiverName: 'vivek dixit',
-      transactionRefId: 'TestingUpiIndiaPlugin',
-      transactionNote: 'Not actual. Just an example.',
-      amount: 1.00,
+      transactionRefId: 'new payment',
+      transactionNote: 'hospital',
+      amount: enteredNumber,
     );
   }
 
@@ -105,11 +118,44 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _checkTxnStatus(String status) {
+  Future<void> _checkTxnStatus(String status) async {
     switch (status) {
       case UpiPaymentStatus.SUCCESS:
+        try {
+          User? user = FirebaseAuth.instance.currentUser;
+
+          // Generate a unique transactionId, you can use a UUID package or any other method
+          String transactionId =
+              'unique_transaction_id_${DateTime.now().millisecondsSinceEpoch}';
+          DateTime transactionTime = DateTime.now();
+          double transactionAmount = enteredNumber;
+
+          // Store transaction data in Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user!.uid)
+              .collection('transactions')
+              .add({
+            'transactionId': transactionId,
+            'transactionTime': transactionTime,
+            'transactionAmount': transactionAmount,
+          });
+
+          // Update totalBalance in Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({
+            'totalBalance': FieldValue.increment(transactionAmount),
+          });
+
+          print('Transaction successful and sent to Firestore!');
+        } catch (e) {
+          print('Error sending transaction to Firestore: $e');
+        }
         print('Transaction Successful');
         break;
+
       case UpiPaymentStatus.SUBMITTED:
         print('Transaction Submitted');
         break;
@@ -164,8 +210,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
 
-                  // If we have data then definitely we will have UpiResponse.
-                  // It cannot be null
                   UpiResponse _upiResponse = snapshot.data!;
 
                   // Data in UpiResponse can be null. Check before printing

@@ -24,85 +24,82 @@ class _welcomeScreenState extends State<welcomeScreen> {
         body: ListView(
           children: [
             Center(
-              child: Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 178, 193, 203),
-                    // gradient: SweepGradient(colors: Colors.accents)
-                  ),
-                  child: Column(
-                    children: [
-                      const SizedBox(
-                        height: 15,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 178, 193, 203),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(
+                      height: 15,
+                    ),
+                    Container(
+                      height: 400,
+                      width: 370,
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 240, 231, 140),
+                        borderRadius: BorderRadius.circular(50),
                       ),
-                      Container(
-                        height: 400,
-                        width: 370,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 240, 231, 140),
-                          borderRadius: BorderRadius.circular(50),
+                      child: SvgPicture.asset(
+                        'asset/image2.svg',
+                        fit: BoxFit.fitHeight,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    const Hero(
+                      tag: "logo",
+                      child: CircleAvatar(
+                        backgroundImage: AssetImage("asset/logo.jpg"),
+                        radius: 50,
+                      ),
+                    ),
+                    const Text(
+                      "Discover your",
+                      style:
+                          TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                    ),
+                    const Text(
+                      "Dream chat App",
+                      style:
+                          TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(
+                      height: 15,
+                    ),
+                    const Text(
+                      "Explore all the most exiting features",
+                      style: TextStyle(color: Colors.black38),
+                    ),
+                    const Text("based on the Firease and user Experience",
+                        style: TextStyle(color: Colors.black38)),
+                    const SizedBox(
+                      height: 40,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        welocmeScreen_button_register_and_login(
+                          buttotext: "Register",
+                          onpressed: () {
+                            String userphoneNumber = "+919129999362";
+                            registerphone(userphoneNumber);
+                            Navigator.pushNamed(context, registerpage.id);
+                          },
                         ),
-                        child: SvgPicture.asset(
-                          'asset/image2.svg',
-                          fit: BoxFit.fitHeight,
+                        const SizedBox(
+                          width: 5,
                         ),
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      const Hero(
-                        tag: "logo",
-                        child: CircleAvatar(
-                          backgroundImage: AssetImage("asset/logo.jpg"),
-                          radius: 50,
+                        welocmeScreen_button_register_and_login(
+                          buttotext: "Login",
+                          onpressed: () {
+                            Navigator.pushNamed(context, loginscreen.id);
+                          },
                         ),
-                      ),
-                      const Text(
-                        "Discover your",
-                        style: TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.w700),
-                      ),
-                      const Text(
-                        "Dream chat App",
-                        style: TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(
-                        height: 15,
-                      ),
-                      const Text(
-                        "Explore all the most exiting features",
-                        style: TextStyle(color: Colors.black38),
-                      ),
-                      const Text("based on the Firease and user Experience",
-                          style: TextStyle(color: Colors.black38)),
-                      const SizedBox(
-                        height: 40,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          welocmeScreen_button_register_and_login(
-                            buttotext: "Register",
-                            onpressed: () {
-                              String userphoneNumber = "+919129999362";
-                              registerphone(userphoneNumber);
-                              Navigator.pushNamed(context, registerpage.id);
-                            },
-                          ),
-                          const SizedBox(
-                            width: 5,
-                          ),
-                          welocmeScreen_button_register_and_login(
-                            buttotext: "Login",
-                            onpressed: () {
-                              Navigator.pushNamed(context, loginscreen.id);
-                            },
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
+                      ],
+                    )
+                  ],
                 ),
               ),
             ),
