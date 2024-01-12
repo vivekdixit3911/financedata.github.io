@@ -61,7 +61,7 @@ class _welcomeScreenState extends State<welcomeScreen> {
                           TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
                     ),
                     const Text(
-                      "Dream chat App",
+                      "Dream app that Investes",
                       style:
                           TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
                     ),

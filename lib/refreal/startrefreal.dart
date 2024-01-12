@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:finance/companydetail/details.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReferralPageStart extends StatefulWidget {
   static String id = "FetchReferralIdsPage";
@@ -51,14 +51,17 @@ class _ReferralPageStartState extends State<ReferralPageStart> {
                   child: Text('Save Referral Details'),
                 ),
                 SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    UserDataDisplay();
-                  },
-                  child: Text('Skip'),
-                ),
               ],
             ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => UserDataDisplay()),
+              );
+            },
+            child: Text('Skip'),
+          ),
         ],
       ),
     );
@@ -130,6 +133,11 @@ class _ReferralPageStartState extends State<ReferralPageStart> {
           actions: [
             ElevatedButton(
               onPressed: () {
+                // Access the bottombar state using the global key
+                var bottombarKey;
+                bottombarKey.currentState?.navigateToUserDataDisplay();
+
+                // Close the dialog
                 Navigator.of(context).pop();
               },
               child: Text('OK'),

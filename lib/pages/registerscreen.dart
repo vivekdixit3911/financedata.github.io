@@ -282,6 +282,7 @@ class _registerpageState extends State<registerpage> {
         'todaysEarning': 0,
         'numberOfShares': [],
         'referralId': generatedide,
+        'transactionsDetails': [],
       });
     } catch (e) {
       print('Error registering user and updating Firestore document: $e');

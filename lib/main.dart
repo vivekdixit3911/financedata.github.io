@@ -3,7 +3,9 @@ import 'package:finance/firebase_options.dart';
 import 'package:finance/pages/loginscreen.dart';
 import 'package:finance/pages/registerscreen.dart';
 import 'package:finance/pages/welcomescreen.dart';
+import 'package:finance/qr/qr.dart';
 import 'package:finance/refreal/startrefreal.dart';
+import 'package:finance/userdetail/userdetails.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -31,6 +33,8 @@ class MyApp extends StatelessWidget {
         registerpage.id: (context) => const registerpage(),
         loginscreen.id: (context) => const loginscreen(),
         ReferralPageStart.id: (context) => ReferralPageStart(),
+        Qrgen.id: (context) => Qrgen(),
+        UserDetails.id: (context) => const UserDetails(),
       },
     );
   }

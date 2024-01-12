@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 class UserData {
   static final UserData _singleton = UserData._internal();
@@ -71,6 +72,7 @@ class ElegantBackgroundProductCard extends StatelessWidget {
     required this.days,
     required this.onPressed,
   });
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -175,8 +177,11 @@ class ProductCardPage extends StatefulWidget {
 }
 
 class _ProductCardPageState extends State<ProductCardPage> {
+  int _timerValue = 0;
+  late Timer _timer;
+
   Future<void> savePurchasedProductToFirestore(
-      String productName, int price) async {
+      String productName, int price, int days) async {
     String? userId = UserData().userId;
 
     if (userId != null) {
@@ -186,8 +191,12 @@ class _ProductCardPageState extends State<ProductCardPage> {
             'name': productName,
             'price': price,
             'purchaseDateTime': DateTime.now(),
+            'days': days,
+            'timerValue': days * 24 * 60 * 60, // Initial timer value in seconds
+            'status': 'active', // Status can be 'active' or 'over'
           }
         ]),
+        'numberOfShares': FieldValue.arrayUnion([productName]),
       }).then((_) {
         print("Product added to Firestore successfully!");
       }).catchError((error) {
@@ -196,8 +205,89 @@ class _ProductCardPageState extends State<ProductCardPage> {
     }
   }
 
+  void _startTimer(String productName, int days) {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
+      setState(() {
+        if (_timerValue > 0) {
+          _timerValue--;
+          _updateTimerValueInFirebase(productName);
+        } else {
+          timer.cancel(); // Stop the timer when it reaches zero
+        }
+      });
+
+      // // Update the timer value in Firebase when it changes
+      // await _updateTimerValueInFirebase(productName);
+    });
+  }
+
+  Future<void> _updateTimerValueInFirebase(String productName) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userDoc =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      try {
+        // Fetch the current user data
+        await UserData().fetchUserData();
+
+        // Get the purchased products array
+        List<dynamic> purchasedProducts =
+            UserData().numberOfShares as List<dynamic>;
+
+        // Find the purchased product by name
+        var purchasedProduct = purchasedProducts.firstWhere(
+          (product) => product['name'] == productName,
+          orElse: () => null,
+        );
+
+        // If the product is found and the timer value is greater than zero, decrement it
+        if (purchasedProduct != null && purchasedProduct['timerValue'] > 0) {
+          purchasedProduct['timerValue']--;
+
+          // If the timer value reaches zero, mark the product as 'over'
+          if (purchasedProduct['timerValue'] == 0) {
+            purchasedProduct['status'] = 'over';
+          }
+
+          // Update the timer value in Firestore
+          await userDoc.update({'purchasedProducts': purchasedProducts});
+        }
+      } catch (e) {
+        print('Error updating timer value: $e');
+      }
+    }
+  }
+
+  String _formatDuration(int seconds) {
+    final days = seconds ~/ 86400;
+    final hours = (seconds % 86400) ~/ 3600;
+    final minutes = ((seconds % 86400) % 3600) ~/ 60;
+    return '$days days $hours hours $minutes minutes';
+  }
+
+  void _showCongratulationsDialog(BuildContext context, String productName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Congratulations!'),
+          content: Text('You have successfully purchased $productName.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showConfirmationDialog(
-      BuildContext context, String productName, int price) async {
+      BuildContext context, String productName, int price, int days) async {
     // Show loading dialog
     showDialog(
       context: context,
@@ -244,7 +334,8 @@ class _ProductCardPageState extends State<ProductCardPage> {
                   UserData().totalBalance -= price;
 
                   // Save purchased product to Firestore
-                  await savePurchasedProductToFirestore(productName, price);
+                  await savePurchasedProductToFirestore(
+                      productName, price, days);
 
                   // Update totalBalance in Firestore
                   await FirebaseFirestore.instance
@@ -252,8 +343,12 @@ class _ProductCardPageState extends State<ProductCardPage> {
                       .doc(UserData().userId)
                       .update({'totalBalance': UserData().totalBalance});
 
+                  // Start the timer for the purchased product
+                  _startTimer(productName, days);
+
                   // Close the confirmation dialog
                   Navigator.of(context).pop();
+                  _showCongratulationsDialog(context, productName);
                 },
                 child: Text('Yes'),
               ),
@@ -288,311 +383,131 @@ class _ProductCardPageState extends State<ProductCardPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Color(0xFFE1F5FE),
-        body: SingleChildScrollView(
-          child: GridView.count(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: List.generate(
-              12,
-              (index) {
-                String productName = '';
-                int price = 0;
-                int totalPrice = 0;
-                int dailyIncome = 0;
-                int days = 0;
-
-                // Assign values based on the provided product details
-                switch (index) {
-                  case 0:
-                    productName = "Product 1";
-                    price = 90;
-                    totalPrice = 225;
-                    dailyIncome = 25;
-                    days = 14;
-                    break;
-                  case 1:
-                    productName = "Product 2";
-                    price = 35;
-                    totalPrice = 520;
-                    dailyIncome = 20;
-                    days = 700;
-                    break;
-                  case 2:
-                    productName = "Product 3";
-                    price = 60;
-                    totalPrice = 1225;
-                    dailyIncome = 30;
-                    days = 1800;
-                    break;
-                  case 3:
-                    productName = "Product 4";
-                    price = 120;
-                    totalPrice = 1980;
-                    dailyIncome = 26;
-                    days = 3120;
-                    break;
-                  case 4:
-                    productName = "Product 5";
-                    price = 190;
-                    totalPrice = 3900;
-                    dailyIncome = 28;
-                    days = 5320;
-                    break;
-                  case 5:
-                    productName = "Product 6";
-                    price = 250;
-                    totalPrice = 7200;
-                    dailyIncome = 250;
-                    days = 8750;
-                    break;
-                  case 6:
-                    productName = "Product 7";
-                    price = 350;
-                    totalPrice = 11200;
-                    dailyIncome = 39;
-                    days = 13650;
-                    break;
-                  case 7:
-                    productName = "Product 8";
-                    price = 710;
-                    totalPrice = 24500;
-                    dailyIncome = 40;
-                    days = 28400;
-                    break;
-                  case 8:
-                    productName = "Product 9";
-                    price = 920;
-                    totalPrice = 32000;
-                    dailyIncome = 40;
-                    days = 36800;
-                    break;
-                  case 9:
-                    productName = "Product 10";
-                    price = 1600;
-                    totalPrice = 40000;
-                    dailyIncome = 30;
-                    days = 48000;
-                    break;
-                  case 10:
-                    productName = "Product 11";
-                    price = 1600;
-                    totalPrice = 45000;
-                    dailyIncome = 30;
-                    days = 54000;
-                    break;
-                  case 11:
-                    productName = "Product 12";
-                    price = 2200;
-                    totalPrice = 50000;
-                    dailyIncome = 28;
-                    days = 61600;
-                    break;
-                }
-
-                return ElegantBackgroundProductCard(
-                  totalPrice: totalPrice,
-                  price: price,
-                  dailyIncome: dailyIncome,
-                  days: days,
-                  productName: productName,
-                  onPressed: () {
-                    _showConfirmationDialog(context, productName, price);
-                  },
-                );
-              },
-            ),
-          ),
-        ));
-  }
-}
-
-class ProductCard extends StatefulWidget {
-  final int totalPrice;
-  final int price;
-  final int dailyIncome;
-  final int days;
-  final String productName;
-  final VoidCallback onPressed;
-
-  const ProductCard({
-    required this.totalPrice,
-    required this.price,
-    required this.dailyIncome,
-    required this.days,
-    required this.productName,
-    required this.onPressed,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  _ProductCardState createState() => _ProductCardState();
-}
-
-class _ProductCardState extends State<ProductCard>
-    with TickerProviderStateMixin {
-  late AnimationController _moneyShowerController;
-  late Animation<double> _moneyShowerAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Initialize animation controller
-    _moneyShowerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    );
-
-    // Initialize animation
-    _moneyShowerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _moneyShowerController,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-
-  @override
   void dispose() {
-    _moneyShowerController.dispose();
+    _timer.cancel(); // Cancel the timer when the widget is disposed
     super.dispose();
   }
 
-  void _showMoneyBurst(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Money Burst'),
-          content: Container(
-            width: 200,
-            height: 260,
-            alignment: Alignment.center,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/tree.png', // Replace with your money image
-                    width: 40,
-                    height: 40,
-                  ),
-                ),
-                Positioned.fill(
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      '+₹${widget.dailyIncome}',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: () {
-        // Trigger the money shower animation
-        _moneyShowerController.reset();
-        _moneyShowerController.forward();
-        _showMoneyBurst(context);
-        widget.onPressed();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.elliptical(20, 20)),
-          color: Color.fromARGB(224, 255, 255, 255),
-          border: Border.all(color: Color.fromARGB(255, 186, 182, 182)),
-        ),
-        padding: const EdgeInsets.all(16.0),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.productName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Total Price: ₹${widget.totalPrice}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Price: ₹${widget.price}",
-                  style: TextStyle(
-                    color: Color.fromARGB(163, 7, 220, 128),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Daily Income: ₹${widget.dailyIncome}",
-                  style: TextStyle(
-                    color: Color.fromARGB(163, 7, 220, 128),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Days: ${widget.days}",
-                  style: TextStyle(
-                    color: Color.fromARGB(163, 7, 220, 128),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            // Money shower effect
-            AnimatedBuilder(
-              animation: _moneyShowerAnimation,
-              builder: (context, child) {
-                return Positioned(
-                  top: -50 + 100 * _moneyShowerAnimation.value,
-                  child: Opacity(
-                    opacity: 1.0 - _moneyShowerAnimation.value,
-                    child: Image.asset(
-                      'assets/tree.png', // Replace with your money image
-                      width: 40,
-                      height: 40,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+    return Scaffold(
+      backgroundColor: Color(0xFFE1F5FE),
+      body: SingleChildScrollView(
+        child: GridView.count(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: List.generate(
+            12,
+            (index) {
+              String productName = '';
+              int price = 0;
+              int totalPrice = 0;
+              int dailyIncome = 0;
+              int days = 0;
+
+              // Assign values based on the provided product details
+              switch (index) {
+                case 0:
+                  productName = "Product 1";
+                  price = 90;
+                  totalPrice = 225;
+                  dailyIncome = 25;
+                  days = 14;
+                  break;
+                case 1:
+                  productName = "Product 2";
+                  price = 35;
+                  totalPrice = 520;
+                  dailyIncome = 20;
+                  days = 700;
+                  break;
+                case 2:
+                  productName = "Product 3";
+                  price = 60;
+                  totalPrice = 1225;
+                  dailyIncome = 30;
+                  days = 1800;
+                  break;
+                case 3:
+                  productName = "Product 4";
+                  price = 120;
+                  totalPrice = 1980;
+                  dailyIncome = 26;
+                  days = 3120;
+                  break;
+                case 4:
+                  productName = "Product 5";
+                  price = 190;
+                  totalPrice = 3900;
+                  dailyIncome = 28;
+                  days = 5320;
+                  break;
+                case 5:
+                  productName = "Product 6";
+                  price = 250;
+                  totalPrice = 7200;
+                  dailyIncome = 250;
+                  days = 8750;
+                  break;
+                case 6:
+                  productName = "Product 7";
+                  price = 350;
+                  totalPrice = 11200;
+                  dailyIncome = 39;
+                  days = 13650;
+                  break;
+                case 7:
+                  productName = "Product 8";
+                  price = 710;
+                  totalPrice = 24500;
+                  dailyIncome = 40;
+                  days = 28400;
+                  break;
+                case 8:
+                  productName = "Product 9";
+                  price = 920;
+                  totalPrice = 32000;
+                  dailyIncome = 40;
+                  days = 36800;
+                  break;
+                case 9:
+                  productName = "Product 10";
+                  price = 1600;
+                  totalPrice = 40000;
+                  dailyIncome = 30;
+                  days = 48000;
+                  break;
+                case 10:
+                  productName = "Product 11";
+                  price = 1600;
+                  totalPrice = 45000;
+                  dailyIncome = 30;
+                  days = 54000;
+                  break;
+                case 11:
+                  productName = "Product 12";
+                  price = 2200;
+                  totalPrice = 50000;
+                  dailyIncome = 28;
+                  days = 61600;
+                  break;
+              }
+
+              return ElegantBackgroundProductCard(
+                totalPrice: totalPrice,
+                price: price,
+                dailyIncome: dailyIncome,
+                days: days,
+                productName: productName,
+                onPressed: () {
+                  _showConfirmationDialog(context, productName, price, days);
+                },
+              );
+            },
+          ),
         ),
       ),
     );
