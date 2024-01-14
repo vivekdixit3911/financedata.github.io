@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 class UserData {
   static final UserData _singleton = UserData._internal();
 

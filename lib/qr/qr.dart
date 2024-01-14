@@ -63,7 +63,7 @@ class QrgenState extends State<Qrgen> {
                     onPressed: () {
                       handleMakePayment();
                     },
-                    child: Text("I have made payment"),
+                    child: Text("Input UTR number"),
                   ),
                   if (isVerifying)
                     Column(

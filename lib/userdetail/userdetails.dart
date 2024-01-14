@@ -1,3 +1,4 @@
+import 'package:finance/allshares/allshares.dart';
 import 'package:finance/qr/qr.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +12,8 @@ class UserDetails extends StatefulWidget {
 }
 
 class UserDetailsState extends State<UserDetails> {
-  double totalBalance = 1000.0; // Replace with actual data
+  double totalBalance =
+      UserData().totalBalance as double; // Replace with actual data
   double todaysEarning = 50.0; // Replace with actual data
 
   TextEditingController amountController = TextEditingController();
@@ -19,9 +21,6 @@ class UserDetailsState extends State<UserDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('User Details'),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

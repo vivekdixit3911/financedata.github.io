@@ -1,7 +1,9 @@
 import 'package:finance/allshares/allshares.dart';
 import 'package:finance/companydetail/details.dart';
+import 'package:finance/pages/welcomescreen.dart';
 import 'package:finance/refreal/refreal.dart';
 import 'package:finance/userdetail/userdetails.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:rolling_bottom_bar/rolling_bottom_bar.dart';
 import 'package:rolling_bottom_bar/rolling_bottom_bar_item.dart';
@@ -52,7 +54,8 @@ class _bottombarState extends State<bottombar> {
             ),
             IconButton(
               onPressed: () async {
-                // ... (existing code for logout)
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushNamed(context, welcomeScreen.id);
               },
               icon: CircleAvatar(child: Icon(Icons.logout_sharp)),
               color: Colors.white,
