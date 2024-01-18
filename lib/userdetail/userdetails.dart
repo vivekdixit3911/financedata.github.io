@@ -12,9 +12,8 @@ class UserDetails extends StatefulWidget {
 }
 
 class UserDetailsState extends State<UserDetails> {
-  double totalBalance =
-      UserData().totalBalance as double; // Replace with actual data
-  double todaysEarning = 50.0; // Replace with actual data
+  double totalBalance = UserData().totalBalance as double; // Replace
+  double todaysEarning = 50.0; // Replace
 
   TextEditingController amountController = TextEditingController();
 

@@ -151,9 +151,6 @@ class ReferralPageState extends State<ReferralPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Fetch Referral IDs and Names'),
-      ),
       body: Column(
         children: [
           Padding(
@@ -284,33 +281,32 @@ class ReferralPageState extends State<ReferralPage> {
   }
 
   Future<void> _saveReferralDetails() async {
-    String userId = "YourUserDocumentId"; // Replace with the actual user ID.
-
     try {
-      // Fetch the existing user data
-      DocumentReference<Map<String, dynamic>> userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userId);
+      String userId = "YourUserDocumentId"; 
 
-      DocumentSnapshot<Map<String, dynamic>> userDoc = await userDocRef.get();
+      // Access the collection for the user's referred people details
+      CollectionReference refredPeopleDetailsCollection = FirebaseFirestore
+          .instance
+          .collection('users')
+          .doc(userId)
+          .collection('refred_people_detail');
 
-      // Extract the existing referees list or initialize an empty list
-      List<dynamic> referees = userDoc.get('referees') ?? [];
+      // Check if the referral ID is already in the collection
+      QuerySnapshot querySnapshot = await refredPeopleDetailsCollection
+          .where('referralId', isEqualTo: _referralIdController.text)
+          .get();
 
-      // Check if the referral ID is already in the list
-      if (!referees.contains(_referralIdController.text)) {
-        // Add the new referral ID to the list
-        referees.add({
+      if (querySnapshot.docs.isEmpty) {
+        // Add the new referral details as a document in the collection
+        await refredPeopleDetailsCollection.add({
           'referralId': _referralIdController.text,
           'referralName': _referralName,
         });
 
-        // Update the user document with the new referees list
-        await userDocRef.set({'referees': referees}, SetOptions(merge: true));
-
-        // Optionally, you can show a success message or update the UI
-        print('Referral details saved successfully.');
+        print('Referral details saved successfully in the collection.');
       } else {
-        _showWarning('Referral ID already exists in your referees list.');
+        _showWarning(
+            'Referral ID already exists in your refred_people_detail collection.');
       }
     } catch (e) {
       print('Error saving referral details: $e');

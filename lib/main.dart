@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         bottombar.id: (context) => const bottombar(),
         registerpage.id: (context) => const registerpage(),
         loginscreen.id: (context) => const loginscreen(),
-        ReferralPageStart.id: (context) => ReferralPageStart(),
+        ReferralPageStart.id: (context) =>  ReferralPageStart(),
         Qrgen.id: (context) => Qrgen(),
         UserDetails.id: (context) => const UserDetails(),
       },

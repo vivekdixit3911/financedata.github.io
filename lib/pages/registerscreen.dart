@@ -283,6 +283,7 @@ class _registerpageState extends State<registerpage> {
         'numberOfShares': [],
         'referralId': generatedide,
         'transactionsDetails': [],
+        'refred_people_detail': [],
       });
     } catch (e) {
       print('Error registering user and updating Firestore document: $e');
@@ -291,8 +292,14 @@ class _registerpageState extends State<registerpage> {
   }
 
   String generateReferralId() {
+    const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     Random random = Random();
-    int referralId = random.nextInt(900000) + 100000;
-    return referralId.toString();
+
+    String referralId = '';
+    for (int i = 0; i < 6; i++) {
+      referralId += chars[random.nextInt(chars.length)];
+    }
+
+    return referralId;
   }
 }

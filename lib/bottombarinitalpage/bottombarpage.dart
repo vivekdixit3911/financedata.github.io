@@ -52,6 +52,7 @@ class _bottombarState extends State<bottombar> {
                 ),
               ],
             ),
+            Text("Rs ${UserData().totalBalance}"),
             IconButton(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
