@@ -33,8 +33,8 @@ class QrgenState extends State<Qrgen> {
     final double? enteredAmount = args?['enteredAmount'];
 
     upiDetails = UPIDetails(
-      upiID: "vivekdixit.1@ikwik",
-      payeeName: "Vivek Kr. Dixit",
+      upiID: "9129999362",
+      payeeName: "vivek kr. dixit",
       amount: enteredAmount ?? 0,
       transactionNote: " $enteredAmount is fetchig balance ",
     );
@@ -44,70 +44,83 @@ class QrgenState extends State<Qrgen> {
         appBar: AppBar(
           title: const Text('UPI Payment QRCode Generator'),
         ),
-        body: ListView(
-          children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "UPI Payment QRCode with Amount",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  UPIPaymentQRCode(
-                    upiDetails: upiDetails,
-                    size: 220,
-                    upiQRErrorCorrectLevel: UPIQRErrorCorrectLevel.low,
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      handleMakePayment();
-                    },
-                    child: Text("Input UTR number"),
-                  ),
-                  if (isVerifying)
-                    Column(
-                      children: [
-                        SizedBox(height: 20),
-                        CircularProgressIndicator(),
-                        SizedBox(height: 10),
-                        Text(
-                          "Transaction being verified. Please wait for $countdown seconds.",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  if (!isVerifying && countdown == 0)
-                    Column(
-                      children: [
-                        SizedBox(height: 20),
-                        Text(
-                          "Enter the 12-digit transaction ID:",
-                          style: TextStyle(color: Colors.green),
-                        ),
-                        SizedBox(height: 10),
-                        TextFormField(
-                          controller: transactionIdController,
-                          keyboardType: TextInputType.number,
-                          maxLength: 12,
-                          decoration: InputDecoration(
-                            labelText: "Transaction ID",
-                            hintText: "Enter 12-digit ID",
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: () {
-                            verifyPayment(transactionIdController.text);
-                          },
-                          child: Text("Verify Payment"),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color.fromARGB(255, 190, 208, 223),
+                const Color.fromARGB(255, 206, 164, 213)
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-          ],
+          ),
+          child: ListView(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "UPI Payment QRCode with Amount",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    UPIPaymentQRCode(
+                      upiDetails: upiDetails,
+                      size: 220,
+                      upiQRErrorCorrectLevel: UPIQRErrorCorrectLevel.low,
+                    ),
+                    SizedBox(height: 30),
+                    ElevatedButton(
+                      onPressed: () {
+                        handleMakePayment();
+                      },
+                      child: Text("Input UTR number"),
+                    ),
+                    if (isVerifying)
+                      Column(
+                        children: [
+                          SizedBox(height: 20),
+                          CircularProgressIndicator(),
+                          SizedBox(height: 10),
+                          Text(
+                            "Transaction being verified. Please wait for $countdown seconds.",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    if (!isVerifying && countdown == 0)
+                      Column(
+                        children: [
+                          SizedBox(height: 20),
+                          Text(
+                            "Enter the 12-digit transaction ID:",
+                            style: TextStyle(color: Colors.green),
+                          ),
+                          SizedBox(height: 10),
+                          TextFormField(
+                            controller: transactionIdController,
+                            keyboardType: TextInputType.number,
+                            maxLength: 12,
+                            decoration: InputDecoration(
+                              labelText: "Transaction ID",
+                              hintText: "Enter 12-digit ID",
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              verifyPayment(transactionIdController.text);
+                            },
+                            child: Text("Verify Payment"),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,8 +1,6 @@
 import 'package:finance/companydetail/details.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:clipboard/clipboard.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 // class ReferralPage extends StatefulWidget {
 //   const ReferralPage({Key? key}) : super(key: key);

@@ -1,4 +1,4 @@
-// ignore_for_file: camel_case_types, prefer_const_constructors, avoid_print, unnecessary_null_comparison, non_constant_identifier_names, use_build_context_synchronously
+// ignore_for_file: camel_case_types, avoid_print, unnecessary_null_comparison, non_constant_identifier_names, use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:finance/decorations/welocmescreenbuttons.dart';
@@ -283,7 +283,6 @@ class _registerpageState extends State<registerpage> {
         'numberOfShares': [],
         'referralId': generatedide,
         'transactionsDetails': [],
-        'refred_people_detail': [],
       });
     } catch (e) {
       print('Error registering user and updating Firestore document: $e');

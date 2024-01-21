@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
 class UserData {
   static final UserData _singleton = UserData._internal();
 
@@ -151,6 +149,8 @@ class ElegantBackgroundProductCard extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
+                    SizedBox(height: 4),
+                    // Display remaining time
                   ],
                 ),
               ),
@@ -217,9 +217,6 @@ class _ProductCardPageState extends State<ProductCardPage> {
           timer.cancel(); // Stop the timer when it reaches zero
         }
       });
-
-      // // Update the timer value in Firebase when it changes
-      // await _updateTimerValueInFirebase(productName);
     });
   }
 
@@ -254,6 +251,11 @@ class _ProductCardPageState extends State<ProductCardPage> {
 
           // Update the timer value in Firestore
           await userDoc.update({'purchasedProducts': purchasedProducts});
+
+          // Update the UI with the new timer value
+          setState(() {
+            _timerValue = purchasedProduct['timerValue'];
+          });
         }
       } catch (e) {
         print('Error updating timer value: $e');
@@ -265,7 +267,9 @@ class _ProductCardPageState extends State<ProductCardPage> {
     final days = seconds ~/ 86400;
     final hours = (seconds % 86400) ~/ 3600;
     final minutes = ((seconds % 86400) % 3600) ~/ 60;
-    return '$days days $hours hours $minutes minutes';
+    final secondsRemaining = ((seconds % 86400) % 3600) % 60;
+
+    return '$days days $hours hours $minutes minutes $secondsRemaining seconds';
   }
 
   void _showCongratulationsDialog(BuildContext context, String productName) {
@@ -414,7 +418,7 @@ class _ProductCardPageState extends State<ProductCardPage> {
               switch (index) {
                 case 0:
                   productName = "Product 1";
-                  price = 90;
+                  price = 225;
                   totalPrice = 225;
                   dailyIncome = 25;
                   days = 14;
@@ -424,77 +428,77 @@ class _ProductCardPageState extends State<ProductCardPage> {
                   price = 35;
                   totalPrice = 520;
                   dailyIncome = 20;
-                  days = 700;
+                  days = 35;
                   break;
                 case 2:
                   productName = "Product 3";
                   price = 60;
                   totalPrice = 1225;
                   dailyIncome = 30;
-                  days = 1800;
+                  days = 60;
                   break;
                 case 3:
                   productName = "Product 4";
                   price = 120;
                   totalPrice = 1980;
                   dailyIncome = 26;
-                  days = 3120;
+                  days = 26;
                   break;
                 case 4:
                   productName = "Product 5";
                   price = 190;
                   totalPrice = 3900;
                   dailyIncome = 28;
-                  days = 5320;
+                  days = 28;
                   break;
                 case 5:
                   productName = "Product 6";
                   price = 250;
                   totalPrice = 7200;
                   dailyIncome = 250;
-                  days = 8750;
+                  days = 30;
                   break;
                 case 6:
                   productName = "Product 7";
                   price = 350;
                   totalPrice = 11200;
                   dailyIncome = 39;
-                  days = 13650;
+                  days = 39;
                   break;
                 case 7:
                   productName = "Product 8";
                   price = 710;
                   totalPrice = 24500;
                   dailyIncome = 40;
-                  days = 28400;
+                  days = 40;
                   break;
                 case 8:
                   productName = "Product 9";
                   price = 920;
                   totalPrice = 32000;
                   dailyIncome = 40;
-                  days = 36800;
+                  days = 35;
                   break;
                 case 9:
                   productName = "Product 10";
                   price = 1600;
                   totalPrice = 40000;
                   dailyIncome = 30;
-                  days = 48000;
+                  days = 38;
                   break;
                 case 10:
                   productName = "Product 11";
                   price = 1600;
                   totalPrice = 45000;
                   dailyIncome = 30;
-                  days = 54000;
+                  days = 5;
                   break;
                 case 11:
                   productName = "Product 12";
                   price = 2200;
                   totalPrice = 50000;
                   dailyIncome = 28;
-                  days = 61600;
+                  days = 6;
                   break;
               }
 

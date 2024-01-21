@@ -1,4 +1,5 @@
-import 'package:finance/companydetail/details.dart';
+import 'package:finance/pages/loginscreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -12,6 +13,8 @@ class ReferralPageStart extends StatefulWidget {
 class _ReferralPageStartState extends State<ReferralPageStart> {
   TextEditingController _referralIdController = TextEditingController();
   String _referralName = '';
+
+  final GlobalKey<BottomBarState> bottombarKey = GlobalKey<BottomBarState>();
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +60,7 @@ class _ReferralPageStartState extends State<ReferralPageStart> {
             onPressed: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => UserDataDisplay()),
+                MaterialPageRoute(builder: (context) => loginscreen()),
               );
             },
             child: Text('Skip'),
@@ -133,11 +136,7 @@ class _ReferralPageStartState extends State<ReferralPageStart> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                // Access the bottombar state using the global key
-                var bottombarKey;
                 bottombarKey.currentState?.navigateToUserDataDisplay();
-
-                // Close the dialog
                 Navigator.of(context).pop();
               },
               child: Text('OK'),
@@ -149,37 +148,125 @@ class _ReferralPageStartState extends State<ReferralPageStart> {
   }
 
   Future<void> _saveReferralDetails() async {
-    String userId = "YourUserDocumentId"; // Replace with the actual user ID.
-
     try {
-      // Fetch the existing user data
-      DocumentReference<Map<String, dynamic>> userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userId);
+      String userId = getCurrentUserId();
 
-      DocumentSnapshot<Map<String, dynamic>> userDoc = await userDocRef.get();
+      if (userId.isNotEmpty) {
+        DocumentReference<Map<String, dynamic>> userDocRef =
+            FirebaseFirestore.instance.collection('users').doc(userId);
 
-      // Extract the existing referees list or initialize an empty list
-      List<dynamic> referees = userDoc.get('referees') ?? [];
+        DocumentSnapshot<Map<String, dynamic>> userDoc = await userDocRef.get();
 
-      // Check if the referral ID is already in the list
-      if (!referees.contains(_referralIdController.text)) {
-        // Add the new referral ID to the list
-        referees.add({
-          'referralId': _referralIdController.text,
-          'referralName': _referralName,
-        });
+        // Ensure the "referees" field exists in the document
+        Map<String, dynamic> userData = userDoc.data() ?? {};
+        List<dynamic> referees = userData['referees'] ?? [];
 
-        // Update the user document with the new referees list
-        await userDocRef.set({'referees': referees}, SetOptions(merge: true));
+        if (!referees.any((referee) =>
+            referee['referralId'] == _referralIdController.text &&
+            referee['referralName'] == _referralName)) {
+          referees.add({
+            'referralId': _referralIdController.text,
+            'referralName': _referralName,
+          });
 
-        // Optionally, you can show a success message or update the UI
-        print('Referral details saved successfully.');
+          // Update the document with the new referees list
+          await userDocRef.set({'referees': referees}, SetOptions(merge: true));
+
+          _showSuccessMessage();
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => loginscreen()),
+          );
+        } else {
+          _showWarning(
+              'Referral details already exist. Please refer to someone else.');
+        }
       } else {
-        _showWarning('Referral ID already exists in your referees list.');
+        _showWarning('User not authenticated.');
       }
     } catch (e) {
       print('Error saving referral details: $e');
       _showWarning('Error saving referral details. Please try again.');
     }
+  }
+
+  void _showSuccessMessage() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Success'),
+          content: Text('Referral details saved successfully.'),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+String getCurrentUserId() {
+  try {
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      return user.uid;
+    } else {
+      return '';
+    }
+  } catch (e) {
+    print('Error getting current user ID: $e');
+    return '';
+  }
+}
+
+class BottomBar extends StatefulWidget {
+  @override
+  BottomBarState createState() => BottomBarState();
+}
+
+class BottomBarState extends State<BottomBar> {
+  void navigateToUserDataDisplay() {
+    print('Navigating to UserDataDisplay');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.blue,
+      height: 50,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            onPressed: () {
+              navigateToUserDataDisplay();
+            },
+            child: Text('Navigate'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class UserDataDisplay extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('User Data Display'),
+      ),
+      body: Center(
+        child: Text('Display user data here.'),
+      ),
+    );
   }
 }
