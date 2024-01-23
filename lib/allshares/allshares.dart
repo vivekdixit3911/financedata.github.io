@@ -54,6 +54,31 @@ class UserData {
       }
     }
   }
+
+  Future<void> savePurchasedProductToFirestore(
+      String productName, int price, int days, int initialTimerValue) async {
+    String? userId = UserData().userId;
+
+    if (userId != null) {
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'purchasedProducts': FieldValue.arrayUnion([
+          {
+            'name': productName,
+            'price': price,
+            'purchaseDateTime': DateTime.now(),
+            'days': days,
+            'timerValue': initialTimerValue, // Initial timer value in seconds
+            'status': 'active', // Status can be 'active' or 'over'
+          }
+        ]),
+        'numberOfShares': FieldValue.arrayUnion([productName]),
+      }).then((_) {
+        print("Product added to Firestore successfully!");
+      }).catchError((error) {
+        print("Error adding product to Firestore: $error");
+      });
+    }
+  }
 }
 
 class ElegantBackgroundProductCard extends StatelessWidget {
@@ -182,45 +207,21 @@ class _ProductCardPageState extends State<ProductCardPage> {
   int _timerValue = 0;
   late Timer _timer;
 
-  Future<void> savePurchasedProductToFirestore(
-      String productName, int price, int days) async {
-    String? userId = UserData().userId;
-
-    if (userId != null) {
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'purchasedProducts': FieldValue.arrayUnion([
-          {
-            'name': productName,
-            'price': price,
-            'purchaseDateTime': DateTime.now(),
-            'days': days,
-            'timerValue': days * 24 * 60 * 60, // Initial timer value in seconds
-            'status': 'active', // Status can be 'active' or 'over'
-          }
-        ]),
-        'numberOfShares': FieldValue.arrayUnion([productName]),
-      }).then((_) {
-        print("Product added to Firestore successfully!");
-      }).catchError((error) {
-        print("Error adding product to Firestore: $error");
-      });
-    }
-  }
-
   void _startTimer(String productName, int days) {
     _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
       setState(() {
         if (_timerValue > 0) {
           _timerValue--;
-          _updateTimerValueInFirebase(productName);
+          // Do not update the timer value in Firebase here
         } else {
           timer.cancel(); // Stop the timer when it reaches zero
+          _setProductInactive(productName);
         }
       });
     });
   }
 
-  Future<void> _updateTimerValueInFirebase(String productName) async {
+  Future<void> _setProductInactive(String productName) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final userDoc =
@@ -240,25 +241,15 @@ class _ProductCardPageState extends State<ProductCardPage> {
           orElse: () => null,
         );
 
-        // If the product is found and the timer value is greater than zero, decrement it
-        if (purchasedProduct != null && purchasedProduct['timerValue'] > 0) {
-          purchasedProduct['timerValue']--;
+        // If the product is found, mark it as 'over'
+        if (purchasedProduct != null) {
+          purchasedProduct['status'] = 'over';
 
-          // If the timer value reaches zero, mark the product as 'over'
-          if (purchasedProduct['timerValue'] == 0) {
-            purchasedProduct['status'] = 'over';
-          }
-
-          // Update the timer value in Firestore
+          // Update the status in Firestore
           await userDoc.update({'purchasedProducts': purchasedProducts});
-
-          // Update the UI with the new timer value
-          setState(() {
-            _timerValue = purchasedProduct['timerValue'];
-          });
         }
       } catch (e) {
-        print('Error updating timer value: $e');
+        print('Error setting product as inactive: $e');
       }
     }
   }
@@ -340,8 +331,8 @@ class _ProductCardPageState extends State<ProductCardPage> {
                   UserData().totalBalance -= price;
 
                   // Save purchased product to Firestore
-                  await savePurchasedProductToFirestore(
-                      productName, price, days);
+                  await UserData().savePurchasedProductToFirestore(productName,
+                      price, days, 2 * 60); // 2 minutes initial timer value
 
                   // Update totalBalance in Firestore
                   await FirebaseFirestore.instance
