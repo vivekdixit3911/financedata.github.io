@@ -36,7 +36,7 @@ class QrgenState extends State<Qrgen> {
       upiID: "9129999362",
       payeeName: "vivek kr. dixit",
       amount: enteredAmount ?? 0,
-      transactionNote: " $enteredAmount is fetchig balance ",
+      transactionNote: " $enteredAmount is fetching balance ",
     );
 
     return MaterialApp(
@@ -156,6 +156,23 @@ class QrgenState extends State<Qrgen> {
     _databaseService.getTransactionDetails(enteredTransactionId).then(
       (transactionDetails) {
         if (transactionDetails != null) {
+          // Assuming you have a user ID, replace 'exampleUserId' with the actual user ID
+          String userId = "exampleUserId";
+
+          // Calculate the new total balance by adding the amount to the existing balance
+          double amountAdded = transactionDetails['amount'];
+          double currentBalance =
+              0; // Replace with actual logic to get the current balance
+
+          double newBalance = currentBalance + amountAdded;
+
+          // Update the user's 'money_added' field in the database
+          _databaseService.updateUserMoneyAdded(userId, transactionDetails);
+
+          // Update the total balance in the database
+          _databaseService.updateTotalBalance(userId, newBalance);
+
+          // Show transaction details popup
           showTransactionDetailsPopup(transactionDetails);
         } else {
           showTransactionNotFoundError();
@@ -272,6 +289,29 @@ class DatabaseService {
     } catch (error) {
       // Handle error gracefully (e.g., log error, display user-friendly message)
       rethrow; // Re-throw to allow handling in calling code
+    }
+  }
+
+  Future<void> updateUserMoneyAdded(
+      String userId, Map<String, dynamic> transactionDetails) async {
+    try {
+      await _transactionsCollection.doc(userId).update({
+        'money_added': FieldValue.arrayUnion([transactionDetails]),
+      });
+    } catch (error) {
+      print("Error updating user's money_added: $error");
+      rethrow;
+    }
+  }
+
+  Future<void> updateTotalBalance(String userId, double newBalance) async {
+    try {
+      await _transactionsCollection.doc(userId).update({
+        'totalBalance': newBalance,
+      });
+    } catch (error) {
+      print("Error updating total balance: $error");
+      rethrow;
     }
   }
 }

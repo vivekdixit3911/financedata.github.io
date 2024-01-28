@@ -1,207 +1,139 @@
-import 'package:finance/companydetail/details.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-// class ReferralPage extends StatefulWidget {
-//   const ReferralPage({Key? key}) : super(key: key);
-
-//   @override
-//   State<ReferralPage> createState() => _ReferralPageState();
-// }
-
-// class _ReferralPageState extends State<ReferralPage> {
-//   late User? _currentUser; // Firebase user
-//   String? _currentUserReferralId; // Referral ID fetched from user details
-//   Map<String, dynamic>? userData;
-//   String searchErrorMessage = '';
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _getCurrentUser();
-//   }
-
-//   void _getCurrentUser() async {
-//     User? user = FirebaseAuth.instance.currentUser;
-//     if (user != null) {
-//       setState(() {
-//         _currentUser = user;
-//       });
-
-//       getUserDetailsByReferralId(_currentUser!.uid);
-//     }
-//   }
-
-//   void copyReferralIdToClipboard() {
-//     if (_currentUserReferralId != null) {
-//       FlutterClipboard.copy(_currentUserReferralId!).then((_) {
-//         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-//           content: Text('Referral ID copied to clipboard'),
-//         ));
-//       });
-//     }
-//   }
-
-//   void getUserDetailsByReferralId(String userId) {
-//     setState(() {
-//       userData = null;
-//       searchErrorMessage = '';
-//     });
-
-//     FirebaseFirestore.instance
-//         .collection('users')
-//         .doc(userId)
-//         .get()
-//         .then((DocumentSnapshot documentSnapshot) {
-//       if (documentSnapshot.exists) {
-//         setState(() {
-//           userData = documentSnapshot.data() as Map<String, dynamic>;
-//           // Fetch referralId from user details and display it
-//           String referralId = userData!['referralId'] ?? 'Not available';
-//           // Update the UI with the fetched referralId
-//           _updateReferralId(referralId);
-//         });
-//       } else {
-//         setState(() {
-//           searchErrorMessage = 'No user found with this referral ID';
-//         });
-//       }
-//     }).catchError((error) {
-//       print('Error searching for user details: $error');
-//       setState(() {
-//         searchErrorMessage = 'Error searching for user details';
-//       });
-//     });
-//   }
-
-//   void _updateReferralId(String referralId) {
-//     // Update the UI with the fetched referralId
-//     setState(() {
-//       _currentUserReferralId = referralId;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Padding(
-//       padding: const EdgeInsets.all(16.0),
-//       child: Column(
-//         children: [
-//           Text('Your Referral ID:', style: TextStyle(fontSize: 18.0)),
-//           SizedBox(height: 8.0),
-//           Text(
-//             _currentUserReferralId ?? 'Not logged in',
-//             style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-//           ),
-//           SizedBox(height: 16.0),
-//           ElevatedButton(
-//             onPressed: copyReferralIdToClipboard,
-//             child: Text('Copy to Clipboard'),
-//           ),
-//           SizedBox(height: 16.0),
-//           TextFormField(
-//             decoration: InputDecoration(
-//               labelText: 'Enter Referral ID',
-//               border: OutlineInputBorder(),
-//             ),
-//             onChanged: (value) {
-//               // You can choose whether to update referralId based on user input or not
-//               // For now, let's leave it as it is
-//             },
-//           ),
-//           SizedBox(height: 8.0),
-//           ElevatedButton(
-//             onPressed: () {
-//               getUserDetailsByReferralId(_currentUser?.uid ?? '');
-//             },
-//             child: Text('Get User Details'),
-//           ),
-//           if (searchErrorMessage.isNotEmpty) ...[
-//             SizedBox(height: 16.0),
-//             Text(
-//               searchErrorMessage,
-//               style: TextStyle(color: Colors.red),
-//             ),
-//           ],
-//           if (userData != null) ...[
-//             SizedBox(height: 16.0),
-//             Text('Referred by: ${userData!['name']}'),
-//             // Display other user details as needed
-//           ],
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-// 0000000000000000000000000000000000//
 class ReferralPage extends StatefulWidget {
-  static String id = "FetchReferralIdsPage";
+  static String id = "ReferralPage";
 
   @override
-  ReferralPageState createState() => ReferralPageState();
+  _ReferralPageState createState() => _ReferralPageState();
 }
 
-class ReferralPageState extends State<ReferralPage> {
+class _ReferralPageState extends State<ReferralPage> {
   TextEditingController _referralIdController = TextEditingController();
   String _referralName = '';
+  String _currentUserReferralId = '';
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentUserReferralId();
+  }
+
+  void _fetchCurrentUserReferralId() {
+    String userId = getCurrentUserId();
+
+    if (userId.isNotEmpty) {
+      FirebaseFirestore.instance.collection('users').doc(userId).get().then(
+        (DocumentSnapshot<Map<String, dynamic>> snapshot) {
+          setState(() {
+            _currentUserReferralId = snapshot['referralId'] ?? '';
+          });
+        },
+      ).catchError((error) {
+        print('Error fetching current user referralId: $error');
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _referralIdController,
-              decoration: InputDecoration(
-                labelText: 'Enter Referral ID',
-                border: OutlineInputBorder(),
+      appBar: AppBar(
+        title: Text('Referral Page'),
+      ),
+      body: Container(
+        color: Colors.lightBlueAccent,
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Your Referral ID:',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _fetchReferralDetails();
-            },
-            child: Text('Fetch Referral Details'),
-          ),
-          SizedBox(height: 16),
-          if (_referralName.isNotEmpty)
-            Column(
-              children: [
-                Text('Referral Details:'),
-                Text('Referral ID: ${_referralIdController.text}'),
-                Text('Referral Name: $_referralName'),
-                ElevatedButton(
-                  onPressed: () {
-                    _saveReferralDetails();
-                  },
-                  child: Text('Save Referral Details'),
-                ),
-                SizedBox(height: 16),
-              ],
+            SizedBox(height: 8),
+            Text(
+              _currentUserReferralId,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => UserDataDisplay()),
-              );
-            },
-            child: Text('Skip'),
-          ),
-        ],
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                _copyToClipboard(_currentUserReferralId);
+              },
+              child: Text('Copy to Clipboard'),
+            ),
+            SizedBox(height: 16),
+            _buildSearchBar(),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                _fetchReferralDetails();
+              },
+              child: Text('Fetch Referral Details'),
+            ),
+            SizedBox(height: 16),
+            if (_referralName.isNotEmpty) _buildReferralDetailsSection(),
+            if (_isLoading) CircularProgressIndicator(),
+          ],
+        ),
       ),
     );
   }
 
+  Widget _buildSearchBar() {
+    return TextField(
+      controller: _referralIdController,
+      decoration: InputDecoration(
+        labelText: 'Enter Referral ID',
+        fillColor: Colors.white,
+        filled: true,
+      ),
+    );
+  }
+
+  Widget _buildReferralDetailsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Referral Details:'),
+        Text('Referral ID: ${_referralIdController.text}'),
+        Text('Referral Name: $_referralName'),
+        ElevatedButton(
+          onPressed: () {
+            _saveReferralDetails();
+          },
+          child: Text('Save Referral Details'),
+        ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
   Future<void> _fetchReferralDetails() async {
+    setState(() {
+      _isLoading = true;
+      _referralName = ''; // Reset referralName while loading
+    });
+
     String inputReferralId = _referralIdController.text.trim();
 
     if (inputReferralId.isEmpty) {
       _showWarning('Please enter a Referral ID.');
+      setState(() {
+        _isLoading = false;
+      });
       return;
     }
 
@@ -221,7 +153,7 @@ class ReferralPageState extends State<ReferralPage> {
 
       if (referralData != null) {
         setState(() {
-          _referralName = referralData!['name'];
+          _referralName = referralData!['name'] ?? '';
         });
         _showReferralPopup();
       } else {
@@ -230,6 +162,10 @@ class ReferralPageState extends State<ReferralPage> {
     } catch (e) {
       print('Error fetching referral data: $e');
       _showWarning('Error fetching referral data. Please try again.');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -263,11 +199,6 @@ class ReferralPageState extends State<ReferralPage> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                // Access the bottombar state using the global key
-                var bottombarKey;
-                bottombarKey.currentState?.navigateToUserDataDisplay();
-
-                // Close the dialog
                 Navigator.of(context).pop();
               },
               child: Text('OK'),
@@ -280,35 +211,82 @@ class ReferralPageState extends State<ReferralPage> {
 
   Future<void> _saveReferralDetails() async {
     try {
-      String userId = "YourUserDocumentId"; 
+      String userId = getCurrentUserId();
 
-      // Access the collection for the user's referred people details
-      CollectionReference refredPeopleDetailsCollection = FirebaseFirestore
-          .instance
-          .collection('users')
-          .doc(userId)
-          .collection('refred_people_detail');
+      if (userId.isNotEmpty) {
+        DocumentReference<Map<String, dynamic>> userDocRef =
+            FirebaseFirestore.instance.collection('users').doc(userId);
 
-      // Check if the referral ID is already in the collection
-      QuerySnapshot querySnapshot = await refredPeopleDetailsCollection
-          .where('referralId', isEqualTo: _referralIdController.text)
-          .get();
+        DocumentSnapshot<Map<String, dynamic>> userDoc = await userDocRef.get();
 
-      if (querySnapshot.docs.isEmpty) {
-        // Add the new referral details as a document in the collection
-        await refredPeopleDetailsCollection.add({
-          'referralId': _referralIdController.text,
-          'referralName': _referralName,
-        });
+        Map<String, dynamic> userData = userDoc.data() ?? {};
+        List<dynamic> referees = userData['referees'] ?? [];
 
-        print('Referral details saved successfully in the collection.');
+        if (!referees.any((referee) =>
+            referee['referralId'] == _referralIdController.text &&
+            referee['referralName'] == _referralName)) {
+          referees.add({
+            'referralId': _referralIdController.text,
+            'referralName': _referralName,
+          });
+
+          await userDocRef.set({'referees': referees}, SetOptions(merge: true));
+
+          _showSuccessMessage();
+        } else {
+          _showWarning(
+              'Referral details already exist. Please refer to someone else.');
+        }
       } else {
-        _showWarning(
-            'Referral ID already exists in your refred_people_detail collection.');
+        _showWarning('User not authenticated.');
       }
     } catch (e) {
       print('Error saving referral details: $e');
       _showWarning('Error saving referral details. Please try again.');
+    }
+  }
+
+  void _showSuccessMessage() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Success'),
+          content: Text('Referral details saved successfully.'),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _copyToClipboard(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Referral ID copied to clipboard'),
+      ),
+    );
+  }
+
+  String getCurrentUserId() {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        return user.uid;
+      } else {
+        return '';
+      }
+    } catch (e) {
+      print('Error getting current user ID: $e');
+      return '';
     }
   }
 }

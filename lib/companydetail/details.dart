@@ -4,12 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
-class UserDataDisplay extends StatefulWidget {
+class UserDataDisplay1 extends StatefulWidget {
   @override
-  UserDataDisplayState createState() => UserDataDisplayState();
+  UserDataDisplay1State createState() => UserDataDisplay1State();
 }
 
-class UserDataDisplayState extends State<UserDataDisplay> {
+class UserDataDisplay1State extends State<UserDataDisplay1> {
   late Stream<Map<String, dynamic>> userStream;
 
   @override

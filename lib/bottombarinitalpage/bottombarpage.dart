@@ -52,7 +52,7 @@ class _bottombarState extends State<bottombar> {
                 ),
               ],
             ),
-            Text("Rs ${UserData().totalBalance}"),
+            // Text("Rs ${UserData().totalBalance}"),
             IconButton(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
@@ -68,7 +68,7 @@ class _bottombarState extends State<bottombar> {
       body: PageView(
         controller: _controller,
         children: <Widget>[
-          UserDataDisplay(),
+          UserDataDisplay1(),
           ProductCardPage(),
           ReferralPage(),
           UserDetails(),

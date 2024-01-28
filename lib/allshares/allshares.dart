@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 class UserData {
   static final UserData _singleton = UserData._internal();
@@ -15,10 +15,11 @@ class UserData {
   String userId = '';
   String email = '';
   String name = '';
-  List<dynamic> numberOfShares = [];
+  List<dynamic> purchasedProducts = [];
   int todaysEarning = 0;
   int totalBalance = 0;
 
+  Timer? updateTimer;
   Future<void> fetchUserData() async {
     final FirebaseAuth auth = FirebaseAuth.instance;
     final User? currentUser = auth.currentUser;
@@ -36,14 +37,14 @@ class UserData {
 
           email = userMap['email'] ?? '';
           name = userMap['name'] ?? '';
-          numberOfShares = userMap['numberOfShares'] ?? [];
+          purchasedProducts = userMap['purchasedProducts'] ?? [];
           todaysEarning = userMap['todaysEarning'] ?? 0;
           totalBalance = userMap['totalBalance'] ?? 0;
 
           // Display the fetched data
           print('Email: $email');
           print('Name: $name');
-          print('Number of Shares: $numberOfShares');
+          print('Purchased Products: $purchasedProducts');
           print('Today\'s Earning: $todaysEarning');
           print('Total Balance: $totalBalance');
         } else {
@@ -55,29 +56,108 @@ class UserData {
     }
   }
 
-  Future<void> savePurchasedProductToFirestore(
-      String productName, int price, int days, int initialTimerValue) async {
+  Future<void> updateTodaysEarning() async {
     String? userId = UserData().userId;
 
     if (userId != null) {
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'purchasedProducts': FieldValue.arrayUnion([
-          {
-            'name': productName,
-            'price': price,
-            'purchaseDateTime': DateTime.now(),
-            'days': days,
-            'timerValue': initialTimerValue, // Initial timer value in seconds
-            'status': 'active', // Status can be 'active' or 'over'
-          }
-        ]),
-        'numberOfShares': FieldValue.arrayUnion([productName]),
-      }).then((_) {
-        print("Product added to Firestore successfully!");
-      }).catchError((error) {
-        print("Error adding product to Firestore: $error");
-      });
+      final userDoc =
+          FirebaseFirestore.instance.collection('users').doc(userId);
+
+      try {
+        // Fetch the current user data
+        await fetchUserData();
+
+        if (purchasedProducts != null && purchasedProducts.isNotEmpty) {
+          // Get the active purchased products array
+          List<dynamic> activeProducts = purchasedProducts
+              .where((product) => isProductActive(product))
+              .toList();
+
+          // Calculate todaysEarning based on dailyIncome of active products
+          int updatedTodaysEarning = 0;
+          activeProducts.forEach((product) {
+            updatedTodaysEarning += (product['dailyIncome'] as int?) ?? 0;
+          });
+
+          // Update todaysEarning in Firestore
+          await userDoc.update({'todaysEarning': updatedTodaysEarning});
+        } else {
+          print('Error: purchasedProducts is null or empty.');
+        }
+      } catch (e) {
+        print('Error updating todaysEarning: $e');
+      }
     }
+  }
+
+  Future<void> savePurchasedProductToFirestore(
+      String productName, int price, int days, int dailyIncome) async {
+    String? userId = UserData().userId;
+
+    if (userId != null) {
+      // Check if the user has enough balance
+      if (UserData().totalBalance < price) {
+        throw Exception('Insufficient Balance');
+      }
+
+      try {
+        // Deduct the price from totalBalance
+        UserData().totalBalance -= price;
+
+        // Calculate expiry date by adding days to the current date
+        DateTime purchaseDateTime = DateTime.now();
+        DateTime expiryDateTime = purchaseDateTime.add(Duration(days: days));
+
+        // Save purchased product to Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .update({
+          'purchasedProducts': FieldValue.arrayUnion([
+            {
+              'name': productName,
+              'price': price,
+              'purchaseDateTime': purchaseDateTime,
+              'expiryDateTime': expiryDateTime,
+              'days': days,
+              'dailyIncome': dailyIncome,
+              'status': 'active',
+            }
+          ]),
+          'totalBalance':
+              UserData().totalBalance, // Update totalBalance in Firestore
+        });
+
+        print("Product added to Firestore successfully!");
+      } catch (error) {
+        // If there's an error, add the deducted price back to totalBalance
+        UserData().totalBalance += price;
+        print("Error adding product to Firestore: $error");
+        throw error;
+      }
+    }
+  }
+
+  bool isProductActive(Map<String, dynamic> product) {
+    DateTime purchaseDateTime = product['purchaseDateTime'].toDate();
+    int days = product['days'];
+    DateTime expiryDateTime = purchaseDateTime.add(Duration(days: days));
+
+    return DateTime.now().isBefore(expiryDateTime) &&
+        product['status'] == 'active';
+  }
+
+  void schedulePeriodicUpdate() {
+    const Duration updateInterval = Duration(seconds: 10);
+
+    updateTimer = Timer.periodic(updateInterval, (timer) async {
+      await updateTodaysEarning();
+    });
+  }
+
+  // Cancel the periodic update timer
+  void cancelUpdateTimer() {
+    updateTimer?.cancel();
   }
 }
 
@@ -174,8 +254,6 @@ class ElegantBackgroundProductCard extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    // Display remaining time
                   ],
                 ),
               ),
@@ -204,63 +282,18 @@ class ProductCardPage extends StatefulWidget {
 }
 
 class _ProductCardPageState extends State<ProductCardPage> {
-  int _timerValue = 0;
-  late Timer _timer;
+  bool isUpdateScheduled = false;
 
-  void _startTimer(String productName, int days) {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
-      setState(() {
-        if (_timerValue > 0) {
-          _timerValue--;
-          // Do not update the timer value in Firebase here
-        } else {
-          timer.cancel(); // Stop the timer when it reaches zero
-          _setProductInactive(productName);
-        }
-      });
-    });
+  @override
+  void initState() {
+    super.initState();
+    UserData().schedulePeriodicUpdate();
   }
 
-  Future<void> _setProductInactive(String productName) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final userDoc =
-          FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-      try {
-        // Fetch the current user data
-        await UserData().fetchUserData();
-
-        // Get the purchased products array
-        List<dynamic> purchasedProducts =
-            UserData().numberOfShares as List<dynamic>;
-
-        // Find the purchased product by name
-        var purchasedProduct = purchasedProducts.firstWhere(
-          (product) => product['name'] == productName,
-          orElse: () => null,
-        );
-
-        // If the product is found, mark it as 'over'
-        if (purchasedProduct != null) {
-          purchasedProduct['status'] = 'over';
-
-          // Update the status in Firestore
-          await userDoc.update({'purchasedProducts': purchasedProducts});
-        }
-      } catch (e) {
-        print('Error setting product as inactive: $e');
-      }
-    }
-  }
-
-  String _formatDuration(int seconds) {
-    final days = seconds ~/ 86400;
-    final hours = (seconds % 86400) ~/ 3600;
-    final minutes = ((seconds % 86400) % 3600) ~/ 60;
-    final secondsRemaining = ((seconds % 86400) % 3600) % 60;
-
-    return '$days days $hours hours $minutes minutes $secondsRemaining seconds';
+  @override
+  void dispose() {
+    super.dispose();
+    UserData().cancelUpdateTimer(); // Cancel the timer to prevent memory leaks
   }
 
   void _showCongratulationsDialog(BuildContext context, String productName) {
@@ -283,8 +316,8 @@ class _ProductCardPageState extends State<ProductCardPage> {
     );
   }
 
-  void _showConfirmationDialog(
-      BuildContext context, String productName, int price, int days) async {
+  void _showConfirmationDialog(BuildContext context, String productName,
+      int price, int days, int dailyIncome) async {
     // Show loading dialog
     showDialog(
       context: context,
@@ -331,17 +364,14 @@ class _ProductCardPageState extends State<ProductCardPage> {
                   UserData().totalBalance -= price;
 
                   // Save purchased product to Firestore
-                  await UserData().savePurchasedProductToFirestore(productName,
-                      price, days, 2 * 60); // 2 minutes initial timer value
+                  await UserData().savePurchasedProductToFirestore(
+                      productName, price, days, dailyIncome);
 
                   // Update totalBalance in Firestore
                   await FirebaseFirestore.instance
                       .collection('users')
                       .doc(UserData().userId)
                       .update({'totalBalance': UserData().totalBalance});
-
-                  // Start the timer for the purchased product
-                  _startTimer(productName, days);
 
                   // Close the confirmation dialog
                   Navigator.of(context).pop();
@@ -377,12 +407,6 @@ class _ProductCardPageState extends State<ProductCardPage> {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel(); // Cancel the timer when the widget is disposed
-    super.dispose();
   }
 
   @override
@@ -500,7 +524,8 @@ class _ProductCardPageState extends State<ProductCardPage> {
                 days: days,
                 productName: productName,
                 onPressed: () {
-                  _showConfirmationDialog(context, productName, price, days);
+                  _showConfirmationDialog(
+                      context, productName, price, days, dailyIncome);
                 },
               );
             },
