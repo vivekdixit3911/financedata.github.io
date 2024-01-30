@@ -39,13 +39,13 @@ class _registerpageState extends State<registerpage> {
                     const SizedBox(
                       height: 30,
                     ),
-                    Hero(
-                      tag: "logo",
-                      child: const CircleAvatar(
-                        backgroundImage: AssetImage("asset/logo.jpg"),
-                        radius: 120,
-                      ),
-                    ),
+                    // Hero(
+                    //   tag: "logo",
+                    //   child: const CircleAvatar(
+                    //     backgroundImage: AssetImage("asset/logo.jpg"),
+                    //     radius: 120,
+                    //   ),
+                    // ),
                     const SizedBox(
                       height: 20,
                     ),

@@ -42,14 +42,14 @@ class QrgenState extends State<Qrgen> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('UPI Payment QRCode Generator'),
+          title: Center(child: const Text('UPI Payment ')),
         ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color.fromARGB(255, 190, 208, 223),
-                const Color.fromARGB(255, 206, 164, 213)
+                Color.fromARGB(199, 30, 136, 222),
+                Color.fromARGB(255, 24, 244, 189)
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,

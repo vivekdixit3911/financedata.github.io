@@ -1,7 +1,8 @@
 import 'package:finance/bottombarinitalpage/bottombarpage.dart';
+import 'package:finance/decorations/inputfields.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../decorations/inputfields.dart';
+
 import '../decorations/welocmescreenbuttons.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 
@@ -71,7 +72,7 @@ class _loginscreenState extends State<loginscreen> {
                       onChanged: (value) {
                         username = value;
                       },
-                      decoration: inputdecorusernmae,
+                      decoration: inputdecorpassword,
                     ),
                   ),
                   Padding(
